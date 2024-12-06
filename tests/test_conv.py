@@ -21,34 +21,34 @@ def test_conv1d_simple() -> None:
 
 
 @pytest.mark.task4_1
-@given(tensors(shape=(1, 1, 6)), tensors(shape=(1, 1, 4)))
+@given(tensors(shape=(1, 1, 6)), tensors(shape=(1, 1, 4)))  # type: ignore
 def test_conv1d(input: Tensor, weight: Tensor) -> None:
     print(input, weight)
     minitorch.grad_check(minitorch.Conv1dFun.apply, input, weight)
 
 
 @pytest.mark.task4_1
-@given(tensors(shape=(2, 2, 6)), tensors(shape=(3, 2, 2)))
+@given(tensors(shape=(2, 2, 6)), tensors(shape=(3, 2, 2)))  # type: ignore
 @settings(max_examples=50)
 def test_conv1d_channel(input: Tensor, weight: Tensor) -> None:
     minitorch.grad_check(minitorch.Conv1dFun.apply, input, weight)
 
 
 @pytest.mark.task4_2
-@given(tensors(shape=(1, 1, 6, 6)), tensors(shape=(1, 1, 2, 4)))
+@given(tensors(shape=(1, 1, 6, 6)), tensors(shape=(1, 1, 2, 4)))  # type: ignore
 def test_conv(input: Tensor, weight: Tensor) -> None:
     minitorch.grad_check(minitorch.Conv2dFun.apply, input, weight)
 
 
 @pytest.mark.task4_2
-@given(tensors(shape=(2, 1, 6, 6)), tensors(shape=(1, 1, 2, 4)))
+@given(tensors(shape=(2, 1, 6, 6)), tensors(shape=(1, 1, 2, 4)))  # type: ignore
 @settings(max_examples=10)
 def test_conv_batch(input: Tensor, weight: Tensor) -> None:
     minitorch.grad_check(minitorch.Conv2dFun.apply, input, weight)
 
 
 @pytest.mark.task4_2
-@given(tensors(shape=(2, 2, 6, 6)), tensors(shape=(3, 2, 2, 4)))
+@given(tensors(shape=(2, 2, 6, 6)), tensors(shape=(3, 2, 2, 4)))  # type: ignore
 @settings(max_examples=10)
 def test_conv_channel(input: Tensor, weight: Tensor) -> None:
     minitorch.grad_check(minitorch.Conv2dFun.apply, input, weight)
