@@ -1,5 +1,12 @@
 from mnist import MNIST
 
+from pathlib import Path
+import sys
+
+import streamlit as st
+
+sys.path.append(str(Path(__file__).resolve().parent.parent))
+
 import minitorch
 
 mndata = MNIST("project/data/")
@@ -42,7 +49,7 @@ class Conv2d(minitorch.Module):
 
     def forward(self, input):
         # TODO: Implement for Task 4.5.
-        raise NotImplementedError("Need to implement for Task 4.5")
+        return minitorch.conv2d(input, self.weights.value) + self.bias.value
 
 
 class Network(minitorch.Module):
@@ -68,11 +75,52 @@ class Network(minitorch.Module):
         self.out = None
 
         # TODO: Implement for Task 4.5.
-        raise NotImplementedError("Need to implement for Task 4.5")
+        # Convolutional layers
+        self.conv1 = Conv2d(in_channels=1, out_channels=4, kh=3, kw=3)  # 3x3 kernel
+        self.conv2 = Conv2d(in_channels=4, out_channels=8, kh=3, kw=3)  # 3x3 kernel
+
+        # Fully connected layers
+        self.fc1 = Linear(in_size=392, out_size=64)  # Flattened size is 392
+        self.fc2 = Linear(in_size=64, out_size=C)
+
+        # Dropout
+        # self.dropout = minitorch.Dropout(p=0.25)
+
+        # Store intermediate activations for visualization
+        self.mid = None
+        self.out = None
 
     def forward(self, x):
         # TODO: Implement for Task 4.5.
-        raise NotImplementedError("Need to implement for Task 4.5")
+        # Step 1: Apply first convolution + ReLU
+        x = self.conv1(x)
+        x = x.relu()
+        self.mid = x  # Save intermediate activation
+
+        # Step 2: Apply second convolution + ReLU
+        x = self.conv2(x)
+        x = x.relu()
+        self.out = x  # Save intermediate activation
+
+        # Step 3: Apply 2D pooling
+        x = minitorch.avgpool2d(x, (4, 4))
+
+        # Step 4: Flatten the tensor
+        batch_size = x.shape[0]
+        x = x.view(BATCH, 392)  # Flatten to (batch_size, 392)
+
+        # Step 5: Fully connected layer + ReLU + Dropout
+        x = self.fc1(x)
+        x = x.relu()
+        x = minitorch.nn.dropout(x, 0.25)
+
+        # Step 6: Fully connected layer to size num_classes
+        x = self.fc2(x)
+
+        # Step 7: Apply logsoftmax over class dimension
+        x = minitorch.nn.logsoftmax(x, dim=1)
+
+        return x
 
 
 def make_mnist(start, stop):

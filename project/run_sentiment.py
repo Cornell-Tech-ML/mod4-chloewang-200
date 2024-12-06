@@ -2,7 +2,15 @@ import random
 
 import embeddings
 
+from pathlib import Path
+import sys
+
+import streamlit as st
+
+sys.path.append(str(Path(__file__).resolve().parent.parent))
+
 import minitorch
+
 from datasets import load_dataset
 
 BACKEND = minitorch.TensorBackend(minitorch.FastOps)
@@ -35,7 +43,7 @@ class Conv1d(minitorch.Module):
 
     def forward(self, input):
         # TODO: Implement for Task 4.5.
-        raise NotImplementedError("Need to implement for Task 4.5")
+        return minitorch.conv1d(input, self.weights.value) + self.bias.value
 
 
 class CNNSentimentKim(minitorch.Module):
@@ -62,14 +70,36 @@ class CNNSentimentKim(minitorch.Module):
         super().__init__()
         self.feature_map_size = feature_map_size
         # TODO: Implement for Task 4.5.
-        raise NotImplementedError("Need to implement for Task 4.5")
+        # raise NotImplementedError("Need to implement for Task 4.5")
+        self.dropout = dropout
+        self.conv1 = Conv1d(embedding_size, feature_map_size, filter_sizes[0])
+        self.conv2 = Conv1d(embedding_size, feature_map_size, filter_sizes[1])
+        self.conv3 = Conv1d(embedding_size, feature_map_size, filter_sizes[2])
+        self.fc = Linear(feature_map_size, 1)
 
     def forward(self, embeddings):
         """
         embeddings tensor: [batch x sentence length x embedding dim]
         """
         # TODO: Implement for Task 4.5.
-        raise NotImplementedError("Need to implement for Task 4.5")
+        embeddings = embeddings.permute(0, 2, 1)  # (batch, embedding_dim, sentence_length)
+
+        # Apply convolution + ReLU for each filter size
+        x1 = self.conv1.forward(embeddings).relu()
+        x2 = self.conv2.forward(embeddings).relu()
+        x3 = self.conv3.forward(embeddings).relu()
+
+        # Apply max-over-time pooling across each feature map with concatenate pooled features from all filters
+        pooled = minitorch.max(x1, 2) + minitorch.max(x2, 2) + minitorch.max(x3, 2)  # Max pool over sentence length
+
+        # Fully connected layer with dropout
+        x = self.fc(self.dropout_layer(concatenated)).relu()
+
+        # Dropout
+        x = minitorch.dropout(x, self.dropout, not self.training)
+
+        # Apply sigmoid activation for binary classification
+        return x.sigmoid().view(embeddings.shape[0])
 
 
 # Evaluation helper methods

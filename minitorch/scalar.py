@@ -91,6 +91,53 @@ class Scalar:
     def __rmul__(self, b: ScalarLike) -> Scalar:
         return self * b
 
+    # TODO: Implement for Task 1.2.
+    def __hash__(self) -> int:
+        """Custom hash function for Scalar to make it hashable.
+        We use the unique_id to ensure each Scalar is uniquely identifiable.
+        """
+        return hash(self.unique_id)
+
+    def __eq__(self, b: ScalarLike) -> Scalar:
+        """Returns 1 if `self == b`, otherwise 0."""
+        return EQ.apply(self, b)
+
+    def __add__(self, b: ScalarLike) -> Scalar:
+        """Returns the result of `self + b`."""
+        return Add.apply(self, b)
+
+    def __lt__(self, b: ScalarLike) -> Scalar:
+        """Returns 1 if `self < b`, otherwise 0."""
+        return LT.apply(self, b)
+
+    def __gt__(self, b: ScalarLike) -> Scalar:
+        """Returns 1 if `self > b`, otherwise 0."""
+        return LT.apply(b, self)
+
+    def __sub__(self, b: ScalarLike) -> Scalar:
+        """Returns the result of `self - b`."""
+        return Add.apply(self, Neg.apply(b))
+
+    def __neg__(self) -> Scalar:
+        """Returns the negation of `self`."""
+        return Neg.apply(self)
+
+    def log(self) -> Scalar:
+        """Returns the natural logarithm of `self`."""
+        return Log.apply(self)
+
+    def exp(self) -> Scalar:
+        """Returns the exponential of `self`."""
+        return Exp.apply(self)
+
+    def sigmoid(self) -> Scalar:
+        """Returns the sigmoid of `self`."""
+        return Sigmoid.apply(self)
+
+    def relu(self) -> Scalar:
+        """Returns the ReLU of `self`."""
+        return ReLU.apply(self)
+
     # Variable elements for backprop
 
     def accumulate_derivative(self, x: Any) -> None:
@@ -105,6 +152,7 @@ class Scalar:
         assert self.is_leaf(), "Only leaf variables can have derivatives."
         if self.derivative is None:
             self.__setattr__("derivative", 0.0)
+        # print(f"Accumulating {x} for {self.name}")
         self.__setattr__("derivative", self.derivative + x)
 
     def is_leaf(self) -> bool:
@@ -112,21 +160,45 @@ class Scalar:
         return self.history is not None and self.history.last_fn is None
 
     def is_constant(self) -> bool:
+        """Returns True if this variable is a constant."""
         return self.history is None
 
     @property
     def parents(self) -> Iterable[Variable]:
-        """Get the variables used to create this one."""
+        """Returns the parents of this variable."""
         assert self.history is not None
         return self.history.inputs
 
     def chain_rule(self, d_output: Any) -> Iterable[Tuple[Variable, Any]]:
+        """Computes the chain rule to propagate derivatives backward through the computational graph.
+
+        Args:
+        ----
+            d_output (Any): The gradient of the output with respect to the function that produced this variable.
+
+        Returns:
+        -------
+            Iterable[Tuple[Variable, Any]]: Pairs of input variables and their corresponding gradients.
+
+        """
         h = self.history
         assert h is not None
         assert h.last_fn is not None
         assert h.ctx is not None
 
-        raise NotImplementedError("Need to include this file from past assignment.")
+        # TODO: Implement for Task 1.3.
+        # Call the backward method of the last function
+        local_gradients = h.last_fn._backward(h.ctx, d_output)
+
+        # Ensure local_gradients is always iterable
+        if not isinstance(local_gradients, tuple):
+            local_gradients = (local_gradients,)
+
+        # Pair each input with its corresponding gradient (via the chain rule)
+        return [
+            (input_var, local_grad)
+            for input_var, local_grad in zip(h.inputs, local_gradients)
+        ]
 
     def backward(self, d_output: Optional[float] = None) -> None:
         """Calls autodiff to fill in the derivatives for the history of this object.
@@ -141,17 +213,18 @@ class Scalar:
             d_output = 1.0
         backpropagate(self, d_output)
 
-    raise NotImplementedError("Need to include this file from past assignment.")
+    # TODO: Implement for Task 1.2.
+    # raise NotImplementedError("Need to implement for Task 1.2")
 
 
 def derivative_check(f: Any, *scalars: Scalar) -> None:
     """Checks that autodiff works on a python function.
     Asserts False if derivative is incorrect.
 
-    Parameters
-    ----------
-        f : function from n-scalars to 1-scalar.
-        *scalars  : n input scalar values.
+    Args:
+    ----
+    f : function from n-scalars to 1-scalar.
+    *scalars  : n input scalar values.
 
     """
     out = f(*scalars)
@@ -162,7 +235,7 @@ Derivative check at arguments f(%s) and received derivative f'=%f for argument %
 but was expecting derivative f'=%f from central difference."""
     for i, x in enumerate(scalars):
         check = central_difference(f, *scalars, arg=i)
-        print(str([x.data for x in scalars]), x.derivative, i, check)
+        print(str([x.data for x in scalars]), x.derivative, i, check, "name:", x.name)
         assert x.derivative is not None
         np.testing.assert_allclose(
             x.derivative,
