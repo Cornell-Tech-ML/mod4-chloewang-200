@@ -86,7 +86,8 @@ class Max(Function):
     def backward(ctx: Context, d_output: Tensor) -> Tuple[Tensor]:
         """Computes the backward pass of the max operation."""
         t1, dim = ctx.saved_values
-        return (d_output, 0.0)  # type: ignore
+        c = t1.f.max_reduce(t1, dim) == t1
+        return (d_output * c, 0.0)  # type: ignore
 
 
 def max(input: Tensor, dim: int) -> Tensor:

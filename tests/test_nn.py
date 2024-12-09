@@ -32,6 +32,9 @@ def test_avg(t: Tensor) -> None:
 @given(tensors(shape=(2, 3, 4)))  # type: ignore
 def test_max(t: Tensor) -> None:
     # TODO: Implement for Task 4.4.
+
+    # forward checks
+    t += minitorch.rand(t.shape) * 1e-4
     out = minitorch.max(t, 0)
     assert_close(out[0, 0, 0], max([t[i, 0, 0] for i in range(2)]))
 
@@ -40,6 +43,12 @@ def test_max(t: Tensor) -> None:
 
     out = minitorch.max(t, 2)
     assert_close(out[0, 0, 0], max([t[0, 0, i] for i in range(4)]))
+
+    # grad checks
+
+    minitorch.grad_check(lambda t: minitorch.max(t, dim=0), t)
+    minitorch.grad_check(lambda t: minitorch.max(t, dim=1), t)
+    minitorch.grad_check(lambda t: minitorch.max(t, dim=2), t)
 
 
 @pytest.mark.task4_4

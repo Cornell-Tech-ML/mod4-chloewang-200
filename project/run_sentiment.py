@@ -92,8 +92,9 @@ class CNNSentimentKim(minitorch.Module):
         # Apply max-over-time pooling across each feature map with concatenate pooled features from all filters
         pooled = minitorch.max(x1, 2) + minitorch.max(x2, 2) + minitorch.max(x3, 2)  # Max pool over sentence length
 
+        x = pooled.view(pooled.shape[0], self.feature_map_size)
         # Fully connected layer with dropout
-        x = self.fc(self.dropout_layer(concatenated)).relu()
+        x = self.fc(x).relu()
 
         # Dropout
         x = minitorch.dropout(x, self.dropout, not self.training)
@@ -281,6 +282,29 @@ def encode_sentiment_data(dataset, pretrained_embeddings, N_train, N_val=0):
 
     return (X_train, y_train), (X_val, y_val)
 
+def load_glove_embeddings(path="project/data/glove.6B/glove.6B.50d.txt"):
+    """Load GloVe embeddings from a local file."""
+    word2emb = {}
+    with open(path, 'r', encoding='utf-8') as f:
+        for line in f:
+            values = line.split()
+            word = values[0]
+            vector = [float(x) for x in values[1:]]
+            word2emb[word] = vector
+    return word2emb
+
+class GloveEmbedding:
+    """Wrapper class for preloaded GloVe embeddings."""
+    def __init__(self, word2emb):
+        self.word2emb = word2emb
+        self.d_emb = len(next(iter(word2emb.values())))  # Get embedding dimension
+
+    def emb(self, word, default=None):
+        return self.word2emb.get(word, default)
+
+    def __contains__(self, word):
+        return word in self.word2emb
+
 
 if __name__ == "__main__":
     train_size = 450
@@ -288,9 +312,14 @@ if __name__ == "__main__":
     learning_rate = 0.01
     max_epochs = 250
 
+    word2emb = load_glove_embeddings("project/data/glove.6B/glove.6B.50d.txt")
+    embeddings = GloveEmbedding(word2emb)
+
+
     (X_train, y_train), (X_val, y_val) = encode_sentiment_data(
         load_dataset("glue", "sst2"),
-        embeddings.GloveEmbedding("wikipedia_gigaword", d_emb=50, show_progress=True),
+        # embeddings.GloveEmbedding("wikipedia_gigaword", d_emb=50, show_progress=True),
+        embeddings,
         train_size,
         validation_size,
     )
