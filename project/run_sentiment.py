@@ -2,7 +2,15 @@ import random
 
 import embeddings
 
+from pathlib import Path
+import sys
+
+import streamlit as st
+
+sys.path.append(str(Path(__file__).resolve().parent.parent))
+
 import minitorch
+
 from datasets import load_dataset
 
 BACKEND = minitorch.TensorBackend(minitorch.FastOps)
@@ -35,7 +43,7 @@ class Conv1d(minitorch.Module):
 
     def forward(self, input):
         # TODO: Implement for Task 4.5.
-        raise NotImplementedError("Need to implement for Task 4.5")
+        return minitorch.conv1d(input, self.weights.value) + self.bias.value
 
 
 class CNNSentimentKim(minitorch.Module):
@@ -62,14 +70,37 @@ class CNNSentimentKim(minitorch.Module):
         super().__init__()
         self.feature_map_size = feature_map_size
         # TODO: Implement for Task 4.5.
-        raise NotImplementedError("Need to implement for Task 4.5")
+        # raise NotImplementedError("Need to implement for Task 4.5")
+        self.dropout = dropout
+        self.conv1 = Conv1d(embedding_size, feature_map_size, filter_sizes[0])
+        self.conv2 = Conv1d(embedding_size, feature_map_size, filter_sizes[1])
+        self.conv3 = Conv1d(embedding_size, feature_map_size, filter_sizes[2])
+        self.fc = Linear(feature_map_size, 1)
 
     def forward(self, embeddings):
         """
         embeddings tensor: [batch x sentence length x embedding dim]
         """
         # TODO: Implement for Task 4.5.
-        raise NotImplementedError("Need to implement for Task 4.5")
+        embeddings = embeddings.permute(0, 2, 1)  # (batch, embedding_dim, sentence_length)
+
+        # Apply convolution + ReLU for each filter size
+        x1 = self.conv1.forward(embeddings).relu()
+        x2 = self.conv2.forward(embeddings).relu()
+        x3 = self.conv3.forward(embeddings).relu()
+
+        # Apply max-over-time pooling across each feature map with concatenate pooled features from all filters
+        pooled = minitorch.max(x1, 2) + minitorch.max(x2, 2) + minitorch.max(x3, 2)  # Max pool over sentence length
+
+        x = pooled.view(pooled.shape[0], self.feature_map_size)
+        # Fully connected layer with dropout
+        x = self.fc(x)
+
+        # Dropout
+        x = minitorch.dropout(x, self.dropout, not self.training)
+
+        # Apply sigmoid activation for binary classification
+        return x.sigmoid().view(embeddings.shape[0])
 
 
 # Evaluation helper methods
@@ -251,6 +282,29 @@ def encode_sentiment_data(dataset, pretrained_embeddings, N_train, N_val=0):
 
     return (X_train, y_train), (X_val, y_val)
 
+def load_glove_embeddings(path="project/data/glove.6B/glove.6B.50d.txt"):
+    """Load GloVe embeddings from a local file."""
+    word2emb = {}
+    with open(path, 'r', encoding='utf-8') as f:
+        for line in f:
+            values = line.split()
+            word = values[0]
+            vector = [float(x) for x in values[1:]]
+            word2emb[word] = vector
+    return word2emb
+
+class GloveEmbedding:
+    """Wrapper class for preloaded GloVe embeddings."""
+    def __init__(self, word2emb):
+        self.word2emb = word2emb
+        self.d_emb = len(next(iter(word2emb.values())))  # Get embedding dimension
+
+    def emb(self, word, default=None):
+        return self.word2emb.get(word, default)
+
+    def __contains__(self, word):
+        return word in self.word2emb
+
 
 if __name__ == "__main__":
     train_size = 450
@@ -258,9 +312,14 @@ if __name__ == "__main__":
     learning_rate = 0.01
     max_epochs = 250
 
+    word2emb = load_glove_embeddings("project/data/glove.6B/glove.6B.50d.txt")
+    embeddings = GloveEmbedding(word2emb)
+
+
     (X_train, y_train), (X_val, y_val) = encode_sentiment_data(
         load_dataset("glue", "sst2"),
-        embeddings.GloveEmbedding("wikipedia_gigaword", d_emb=50, show_progress=True),
+        # embeddings.GloveEmbedding("wikipedia_gigaword", d_emb=50, show_progress=True),
+        embeddings,
         train_size,
         validation_size,
     )

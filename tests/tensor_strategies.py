@@ -45,16 +45,16 @@ def tensor_data(
     shape: Optional[UserShape] = None,
 ) -> TensorData:
     if shape is None:
-        shape = draw(shapes())
-    size = int(minitorch.prod(shape))
+        shape = draw(shapes())  # type: ignore
+    size = int(minitorch.prod(shape))  # type: ignore
     data = draw(lists(numbers, min_size=size, max_size=size))
-    permute: List[int] = draw(permutations(range(len(shape))))
-    permute_shape = tuple([shape[i] for i in permute])
+    permute: List[int] = draw(permutations(range(len(shape))))  # type: ignore
+    permute_shape = tuple([shape[i] for i in permute])  # type: ignore
     z = sorted(enumerate(permute), key=lambda a: a[1])
     reverse_permute = [a[0] for a in z]
     td = minitorch.TensorData(data, permute_shape)
     ret = td.permute(*reverse_permute)
-    assert ret.shape[0] == shape[0]
+    assert ret.shape[0] == shape[0]  # type: ignore
     return ret
 
 

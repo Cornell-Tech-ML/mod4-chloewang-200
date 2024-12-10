@@ -61,7 +61,7 @@ def test_one_args(
     data: DataObject,
 ) -> None:
     """Run forward for all one arg functions above."""
-    t1 = data.draw(tensors(backend=shared[backend]))
+    t1 = data.draw(tensors(backend=shared[backend]))  # type: ignore
     name, base_fn, tensor_fn = fn
     t2 = tensor_fn(t1)
     for ind in t2._tensor.indices():
@@ -78,7 +78,7 @@ def test_two_args(
     data: DataObject,
 ) -> None:
     """Run forward for all two arg functions above."""
-    t1, t2 = data.draw(shaped_tensors(2, backend=shared[backend]))
+    t1, t2 = data.draw(shaped_tensors(2, backend=shared[backend]))  # type: ignore
     name, base_fn, tensor_fn = fn
     t3 = tensor_fn(t1, t2)
     for ind in t3._tensor.indices():
@@ -94,7 +94,7 @@ def test_one_derivative(
     data: DataObject,
 ) -> None:
     """Run backward for all one arg functions above."""
-    t1 = data.draw(tensors(backend=shared[backend]))
+    t1 = data.draw(tensors(backend=shared[backend]))  # type: ignore
     name, _, tensor_fn = fn
     grad_check(tensor_fn, t1)
 
@@ -109,7 +109,7 @@ def test_two_grad(
     data: DataObject,
 ) -> None:
     """Run backward for all two arg functions above."""
-    t1, t2 = data.draw(shaped_tensors(2, backend=shared[backend]))
+    t1, t2 = data.draw(shaped_tensors(2, backend=shared[backend]))  # type: ignore
     name, _, tensor_fn = fn
     grad_check(tensor_fn, t1, t2)
 
@@ -124,7 +124,7 @@ def test_reduce(
     data: DataObject,
 ) -> None:
     """Run backward for all reduce functions above."""
-    t1 = data.draw(tensors(backend=shared[backend]))
+    t1 = data.draw(tensors(backend=shared[backend]))  # type: ignore
     name, _, tensor_fn = fn
     grad_check(tensor_fn, t1)
 
@@ -315,7 +315,7 @@ def test_two_grad_broadcast(
     data: DataObject,
 ) -> None:
     """Run backward for all two arg functions above with broadcast."""
-    t1, t2 = data.draw(shaped_tensors(2, backend=shared[backend]))
+    t1, t2 = data.draw(shaped_tensors(2, backend=shared[backend]))  # type: ignore
     name, base_fn, tensor_fn = fn
 
     grad_check(tensor_fn, t1, t2)
@@ -330,7 +330,7 @@ def test_two_grad_broadcast(
 @pytest.mark.parametrize("backend", backend_tests)
 def test_permute(backend: str, data: DataObject) -> None:
     """Check permutations for all backends."""
-    t1 = data.draw(tensors(backend=shared[backend]))
+    t1 = data.draw(tensors(backend=shared[backend]))  # type: ignore
     permutation = data.draw(permutations(range(len(t1.shape))))
 
     def permute(a: Tensor) -> Tensor:
@@ -368,8 +368,8 @@ def test_bmm(backend: str, data: DataObject) -> None:
         data.draw(small_ints),
         data.draw(small_ints),
     )
-    a = data.draw(tensors(backend=shared[backend], shape=(D, A, B)))
-    b = data.draw(tensors(backend=shared[backend], shape=(1, B, C)))
+    a = data.draw(tensors(backend=shared[backend], shape=(D, A, B)))  # type: ignore
+    b = data.draw(tensors(backend=shared[backend], shape=(1, B, C)))  # type: ignore
 
     c = a @ b
     c2 = (
