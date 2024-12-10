@@ -94,7 +94,7 @@ class CNNSentimentKim(minitorch.Module):
 
         x = pooled.view(pooled.shape[0], self.feature_map_size)
         # Fully connected layer with dropout
-        x = self.fc(x).relu()
+        x = self.fc(x)
 
         # Dropout
         x = minitorch.dropout(x, self.dropout, not self.training)
